@@ -8,8 +8,6 @@
 #include <string.h>
 #include "vector.h"
 
-
-
 vector add(vector a, vector b){
 
     vector returnval;

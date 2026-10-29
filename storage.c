@@ -1,71 +1,64 @@
 /** ********************************
 * @file storage.c
-* @brief storage layer - array is static (file scope), not a global
+* @brief storage layer - dynamic array that grows with realloc
 * @author Jonathan Vang
 * @date 9/29/2026
-* @version 1.0
+* @version 2.0
 ***********************************/
 #include <string.h>
+#include <stdlib.h>
 #include "storage.h"
 
-static vector storage[MAX_VECTORS];
+#define INITIAL_CAPACITY 4
 
-int addvect(vector v)
-{
-    int empty = -1;
-    for (int i = 0; i < MAX_VECTORS; i++)
-    {
-        if (storage[i].name[0] == '\0')
-        {
-            if (empty < 0) empty = i;
-        }
-        else if (strcmp(storage[i].name, v.name) == 0)
-        {
-            storage[i] = v;        
+int addvect(vectStore *s,vector v){ 
+    for (int i = 0; i < s->count; i++) {
+        if (strcmp(s->data[i].name, v.name) == 0){
+            s->data[i] = v;        
             return 0;
         }
     }
-    if (empty < 0) return -1;       
-    storage[empty] = v;
+
+    if (s->count == s->capacity){
+        int newCap;
+        if (s->capacity == 0){
+          newCap = INITIAL_CAPACITY;
+        } else {
+            newCap = s->capacity * 2;
+        }
+        vector *bigger = realloc(s->data, (size_t)newCap * sizeof(vector));
+        if (bigger == NULL) return -1;
+        s->data = bigger;
+        s->capacity = newCap;
+    }      
+    s->data[s->count++] = v;
     return 0;
 }
 
-int findvect(const char *name, vector *out)
-{
-    for (int i = 0; i < MAX_VECTORS; i++)
-    {
-        if (storage[i].name[0] != '\0' && strcmp(storage[i].name, name) == 0)
-        {
-            *out = storage[i];
+int findvect(const vectStore *s,const char *name, vector *out){
+    for (int i = 0; i < s->count; i++){
+        if (strcmp(s->data[i].name, name) == 0){
+            *out = s->data[i];
             return 0;
         }
     }
     return -1;
 }
 
-void clear(void)
-{
-    memset(storage, 0, sizeof(storage));
+void clear(vectStore *s){
+    free(s->data);
+    s->data = NULL;
+    s->count = 0;
+    s->capacity = 0;
 }
 
-int countvect(void)
-{
-    int n = 0;
-    for (int i = 0; i < MAX_VECTORS; i++)
-        if (storage[i].name[0] != '\0') n++;
-    return n;
+int countvect(const vectStore *s){
+    return s->count;
 }
 
-int getvect(int n, vector *out)
-{
-    int seen = 0;
-    for (int i = 0; i < MAX_VECTORS; i++)
-    {
-        if (storage[i].name[0] != '\0')
-        {
-            if (seen == n) { *out = storage[i]; return 0; }
-            seen++;
-        }
-    }
-    return -1;
+int getvect(const vectStore *s,int n, vector *out) {
+   if (n <0 || n >= s->count) return -1;
+    *out = s->data[n];
+         
+    return 0;
 }
